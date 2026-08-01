@@ -1,0 +1,5 @@
+作业：轻量化实操
+
+1.在终端查看自己的ip地址，看自己是否有全球IPv6地址（2xxx和3xxx开头就是的，fe80开头是本地地址，fdxx和fcxx是唯一本地地址）
+2.用vim写一个hello-world.txt
+3.用python画函数y=sin(2x+π)图像
