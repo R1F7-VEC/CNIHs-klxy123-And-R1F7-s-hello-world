@@ -1,0 +1,552 @@
+附加二章 · 数据结构与算法 + 图论与树
+
+本章定位：
+
+从基础篇的“会用数据”升级到“能组织和管理数据”. 你将学习栈、队列、链表、树、图、哈希表等核心数据结构，以及排序、搜索、递归、分治等基础算法. 数学拓展部分进入图论与树，这是高中数学竞赛的核心模块之一，也是算法设计的数学基础
+
+学习目标：
+
+理解栈、队列、链表的基本操作和应用场景
+掌握树的定义、遍历和基本性质
+理解图的基本概念
+掌握排序和搜索算法
+理解递归与分治的思维模式
+掌握图论中的树、最短路、欧拉路径等概念
+
+2.1 数据结构：组织数据的艺术
+
+数据结构是计算机存储、组织数据的方式. 选择合适的数据结构，可以让程序运行更快、代码更简洁
+
+2.1.1 栈（Stack）：后进先出（LIFO）
+
+这是一种“后进先出”的数据结构，像一堆盘子：后放的先走
+
+操作：
+
+push：入栈（添加元素到顶部）
+pop：出栈（移除顶部元素）
+peek / top：查看顶部元素
+is_empty：判断栈是否为空
+
+Python（列表）：
+
+stack = []
+stack.append(1)   # push
+stack.append(2)
+stack.append(3)
+print(stack.pop())   # 输出 3（后进先出）
+print(stack.pop())   # 输出 2
+print(stack[-1])     # peek，输出 1
+
+场景：
+
+函数调用栈（记录函数调用顺序）
+括号匹配检查
+撤销操作（Undo）
+表达式求值
+
+2.1.2 队列（Queue）：先进先出（FIFO）
+
+队列是一种“先进先出”的数据结构，像排队买东西——先来的先服务. 
+Python（collections.deque）
+
+from collections import deque
+queue = deque()
+queue.append(1)    # enqueue
+queue.append(2)
+queue.append(3)
+print(queue.popleft())   # 输出 1（先进先出）
+print(queue.popleft())   # 输出 2
+print(queue[0])          # front，输出 3
+
+应用场景：
+
+任务调度
+广度优先搜索
+消息队列
+
+2.1.3 链表（Linked List）
+
+链表由一系列节点组成，每个节点包含数据和指向下一个节点的指针. 它不像数组那样需要连续内存，插入和删除操作效率高，但访问元素需要从头遍历
+
+单向链表结构：
+
+[data|next] > [data|next] > [data|next] > None
+
+python里面可以用类来表示，故此处略去
+
+数组 vs 链表：
+操作			数组		链表
+随机访问（按索引）	O(1)		O(n)
+插入/删除（头部）	O(n)		O(1)
+插入/删除（尾部）	O(1) 或 O(n)	O(1)（有尾指针）
+插入/删除（中间）	O(n)		O(n)（需先查找）
+内存占用		连续		分散，额外存储指针
+
+2.2 树：层级结构
+
+树是一种非线性的数据结构，由节点和边组成，有一个根节点，每个节点可以有多个子节点
+
+class TreeNode:
+    def __init__(self, value):
+        self.value = value
+        self.left = None
+        self.right = None
+
+# 构建一棵树
+root = TreeNode(1)
+root.left = TreeNode(2)
+root.right = TreeNode(3)
+root.left.left = TreeNode(4)
+root.left.right = TreeNode(5)
+
+# 这棵树的结构：
+#     1
+#    / \
+#   2   3
+#  / \
+# 4   5
+
+2.2.2 树的遍历
+
+前序遍历（根-左-右）
+
+def preorder(node):
+    if node:
+        print(node.value, end=" ")
+        preorder(node.left)
+        preorder(node.right)
+
+preorder(root)
+
+此外还有：
+
+中序遍历（inorder，左-根-右）
+和
+后序遍历（postorder，左-右-根）
+
+2.2.3 二叉搜索树（BST）
+
+二叉搜索树是一种特殊的二叉树，满足：左子树所有节点的值小于根节点，右子树所有节点的值大于根节点
+
+插入：
+
+def insert(root, value):
+    if not root:
+        return TreeNode(value)
+    if value < root.value:
+        root.left = insert(root.left, value)
+    else:
+        root.right = insert(root.right, value)
+    return root
+
+# 构建 BST
+bst = None
+for v in [5, 3, 7, 2, 4, 6, 8]:
+    bst = insert(bst, v)
+# 结构：
+#     5
+#    / \
+#   3   7
+#  / \ / \
+# 2  4 6  8
+
+搜索操作
+
+def search(root, value):
+    if not root or root.value == value:
+        return root
+    if value < root.value:
+        return search(root.left, value)
+    return search(root.right, value)
+
+print(search(bst, 4) is not None)  # True
+print(search(bst, 9) is not None)  # False
+
+2.3 图：网络结构
+
+图由顶点（Vertex）和边（Edge）组成，用于表示多对多的关系. 
+
+2.3.1 图的基本概念
+
+顶点（Vertex）：图中的节点
+边（Edge）：连接两个顶点的线
+有向图：边有方向（如关注关系）
+无向图：边无方向（如朋友关系）
+权重：边上的数值（如距离、成本）
+度（Degree）：与顶点相连的边的数量
+
+（由于txt文档无法画图，编者只能用python表示 见谅）
+
+# 无向图
+graph = {
+    'A': ['B', 'C'],
+    'B': ['A', 'D', 'E'],
+    'C': ['A', 'F'],
+    'D': ['B'],
+    'E': ['B', 'F'],
+    'F': ['C', 'E']
+}
+
+# 有向图
+digraph = {
+    'A': ['B', 'C'],
+    'B': ['D'],
+    'C': ['E'],
+    'D': [],
+    'E': ['F'],
+    'F': []
+}
+
+2.3.2 图的遍历
+
+深度优先搜索（DFS）
+
+def dfs(graph, start, visited=None):
+    if visited is None:
+        visited = set()
+    visited.add(start)
+    print(start, end=" ")
+    for neighbor in graph[start]:
+        if neighbor not in visited:
+            dfs(graph, neighbor, visited)
+    return visited
+
+dfs(graph, 'A')  # 输出 A B D E F C（顺序取决于邻接表）
+
+广度优先搜索（BFS）：
+
+from collections import deque
+
+def bfs(graph, start):
+    visited = {start}
+    queue = deque([start])
+    while queue:
+        vertex = queue.popleft()
+        print(vertex, end=" ")
+        for neighbor in graph[vertex]:
+            if neighbor not in visited:
+                visited.add(neighbor)
+                queue.append(neighbor)
+
+bfs(graph, 'A')  # 输出 A B C D E F（逐层遍历）
+
+2.3.3 图的表示方法
+
+（tips：复杂度（方法跑得快不快：当数据量变大时，工作量增长的有多猛）通常表示方法为大O表示法，就是描述这个“增长趋势”的标准数学符号.(O(填入一个代数式)) 它表示的是最坏情况下的工作量，并且忽略常数和低阶项（只抓影响最大的那块））
+
+表示法		适用场景	空间复杂度
+邻接表		稀疏图		O(V+E)
+邻接矩阵	稠密图		O(V²)
+边列表		简单存储	O(E)
+
+邻接矩阵（Python）
+
+# 4个顶点的邻接矩阵
+adj_matrix = [
+    [0, 1, 1, 0],
+    [1, 0, 0, 1],
+    [1, 0, 0, 0],
+    [0, 1, 0, 0]
+]
+# 顶点0与1、2相连，顶点1与0、3相连...
+
+2.4 递归与分治
+
+递归是函数调用自身的技术，分治是将大问题分解为相似的子问题。
+
+2.4.1 递归
+
+阶乘的递归实现
+
+def factorial(n):
+    if n <= 1:
+        return 1
+    return n * factorial(n - 1)
+
+print(factorial(5))  # 120
+
+递归的核心要素：
+
+基线条件：停止递归的条件（如 n <= 1）
+递归条件：将问题缩小后继续调用自身
+
+斐波那契数列
+
+def fib(n):
+    if n <= 1:
+        return n
+    return fib(n-1) + fib(n-2)
+
+print(fib(6))  # 8
+
+注意：上述实现效率很低（重复计算），可以用记忆化优化
+
+2.4.2 分治
+
+分治将问题分解为多个独立的子问题，分别求解后合并结果
+
+归并排序
+
+def merge_sort(arr):
+    if len(arr) <= 1:
+        return arr
+    mid = len(arr) // 2
+    left = merge_sort(arr[:mid])
+    right = merge_sort(arr[mid:])
+    return merge(left, right)
+
+def merge(left, right):
+    result = []
+    i = j = 0
+    while i < len(left) and j < len(right):
+        if left[i] <= right[j]:
+            result.append(left[i])
+            i += 1
+        else:
+            result.append(right[j])
+            j += 1
+    result.extend(left[i:])
+    result.extend(right[j:])
+    return result
+
+print(merge_sort([3, 1, 4, 1, 5, 9, 2, 6]))  # [1, 1, 2, 3, 4, 5, 6, 9]
+
+2.5 搜索与排序
+
+在有序数组中查找目标值，时间复杂度 O(log n)
+
+def binary_search(arr, target):
+    left, right = 0, len(arr) - 1
+    while left <= right:
+        mid = (left + right) // 2
+        if arr[mid] == target:
+            return mid
+        elif arr[mid] < target:
+            left = mid + 1
+        else:
+            right = mid - 1
+    return -1
+
+arr = [1, 3, 5, 7, 9, 11]
+print(binary_search(arr, 7))  # 3
+print(binary_search(arr, 4))  # -1
+
+2.5.2 冒泡排序
+
+时间复杂度 O(n²)，简单但效率低
+
+def bubble_sort(arr):
+    n = len(arr)
+    for i in range(n):
+        for j in range(0, n-i-1):
+            if arr[j] > arr[j+1]:
+                arr[j], arr[j+1] = arr[j+1], arr[j]
+    return arr
+
+(请读者自己理解一下 这作为本章的作业)
+
+2.5.3 选择排序
+
+时间复杂度 O(n²)，每轮选出最小的元素放到前面
+
+def selection_sort(arr):
+    for i in range(len(arr)):
+        min_idx = i
+        for j in range(i+1, len(arr)):
+            if arr[j] < arr[min_idx]:
+                min_idx = j
+        arr[i], arr[min_idx] = arr[min_idx], arr[i]
+    return arr
+
+2.6 哈希表
+
+哈希表（Hash Table）通过键值对存储数据，在平均情况下查找、插入、删除的时间复杂度都是 O(1)
+
+Python 中的字典（dict）就是哈希表的实现
+
+# 创建哈希表
+hash_table = {}
+hash_table["apple"] = 1
+hash_table["banana"] = 2
+hash_table["cherry"] = 3
+
+# 查找（O(1)）
+print(hash_table["banana"])  # 2
+
+# 删除（O(1)）
+del hash_table["apple"]
+
+# 遍历
+for key, value in hash_table.items():
+    print(f"{key}: {value}")
+
+手动实现简易哈希表（用链表处理冲突）
+
+class HashTable:
+    def __init__(self, size=10):
+        self.size = size
+        self.table = [[] for _ in range(size)]
+
+    def _hash(self, key):
+        return hash(key) % self.size
+
+    def insert(self, key, value):
+        index = self._hash(key)
+        for i, (k, v) in enumerate(self.table[index]):
+            if k == key:
+                self.table[index][i] = (key, value)
+                return
+        self.table[index].append((key, value))
+
+    def get(self, key):
+        index = self._hash(key)
+        for k, v in self.table[index]:
+            if k == key:
+                return v
+        return None
+
+# 使用
+ht = HashTable()
+ht.insert("name", "Alice")
+ht.insert("age", 25)
+print(ht.get("name"))  # Alice
+print(ht.get("age"))   # 25
+
+2.7 数学拓展 · 图论与树（6767676767）
+
+图论是高中数学竞赛和大学离散数学的核心模块之一，也是算法设计的数学基础
+
+2.7.1 图的基本概念回顾（从数学角度）
+
+图 G = (V, E)：由顶点集合 V 和边集合 E 组成。
+有向图：每条边有方向（箭头），表示为 (u, v)
+无向图：每条边没有方向，表示为 {u, v}
+环：顶点到自身的边
+路径：从顶点 u 到 v 的连续边的序列
+连通图：任意两个顶点之间都有路径
+欧拉路径：经过图中每条边恰好一次的路径（一笔画问题）
+哈密顿路径：经过图中每个顶点恰好一次的路径
+
+2.7.2 树 —— 特殊的图
+
+定义：树是连通且无环的无向图。
+
+基本性质：
+
+有 n 个顶点的树有 n-1 条边
+树中任意两个顶点之间有且仅有一条路径
+树是边数最少的连通图（删除任意一条边都会使图不连通）
+树是边数最多的无环图（添加任意一条边都会产生环）
+二叉树的竞赛性质：
+
+满二叉树：每个节点都有 0 或 2 个子节点
+完全二叉树：除最后一层外，每层都是满的
+二叉树的深度与节点数的关系：深度为 h 的二叉树最多有 2^(h+1)-1 个节点
+
+树在竞赛中的应用：
+
+树的直径（最远两点的距离）
+树上最短路（LCA 最近公共祖先）
+树形 DP（动态规划在树上的应用）
+
+2.7.3 最短路问题
+
+最短路问题是图论中的经典问题：在带权图中，找出一条从起点到终点路径总权重最小的路径
+
+Dijkstra算法（非负权）
+
+import heapq
+
+def dijkstra(graph, start):
+    distances = {node: float('inf') for node in graph}
+    distances[start] = 0
+    pq = [(0, start)]
+
+    while pq:
+        current_dist, current = heapq.heappop(pq)
+        if current_dist > distances[current]:
+            continue
+        for neighbor, weight in graph[current].items():
+            distance = current_dist + weight
+            if distance < distances[neighbor]:
+                distances[neighbor] = distance
+                heapq.heappush(pq, (distance, neighbor))
+    return distances
+
+# 示例图
+graph = {
+    'A': {'B': 1, 'C': 4},
+    'B': {'A': 1, 'C': 2, 'D': 5},
+    'C': {'A': 4, 'B': 2, 'D': 1},
+    'D': {'B': 5, 'C': 1}
+}
+
+print(dijkstra(graph, 'A'))  # {'A': 0, 'B': 1, 'C': 3, 'D': 4}
+
+2.7.4 欧拉路径与一笔画问题
+
+一个连通无向图存在欧拉路径的条件是：奇度顶点（度为奇数的顶点）的数量为 0 或 2
+奇度顶点数为 0：存在欧拉回路（从某点出发能回到原点）
+奇度顶点数为 2：存在欧拉路径（从一个奇度顶点到另一个）
+
+经典问题：能否一笔画出下面这个图形？
+
+  A
+ / \
+B---C
+| / |
+D---E
+
+解法：计算每个顶点的度，若奇度顶点数为 0 或 2，则能一笔画
+
+数学竞赛中的应用：
+
+判定一个图能否一笔画完成（欧拉路径）
+判定一个图是否存在欧拉回路（无向图所有顶点度为偶数）
+图论与组合计数的结合：给定度序列，判定是否存在对应图（握手定理）
+
+2.7.5 树与图的竞赛题改编示例
+
+原题：一棵树有 n 个顶点，证明至少有 2 个顶点的度数为 1（叶子节点）
+
+编程验证
+
+import random
+
+def generate_tree(n):
+    """生成一棵随机树（Prüfer 序列法）"""
+    if n <= 2:
+        return [0] * (n-1)
+    # 简化实现：生成随机 Prüfer 序列
+    import random
+    prüfer = [random.randint(0, n-1) for _ in range(n-2)]
+    degree = [1] * n
+    for v in prüfer:
+        degree[v] += 1
+    leaves = [i for i in range(n) if degree[i] == 1]
+    return leaves
+
+print(generate_tree(10))  # 叶子数量至少为 2
+
+2.7.6 图论与编程的深度关联
+
+图论概念	编程对应
+顶点		对象 / 节点
+边		指针 / 引用
+路径		查找 / 遍历
+树		文件系统、HTML DOM
+图		社交网络、路由表、依赖图
+最短路		GPS 导航、网络路由
+欧拉路径	一笔画游戏、电路布线
+二分图		匹配问题、推荐系统
+
+2.8 综合实战：最短路径搜索
+
+学了如上知识，你就可以简单做一个路线规划程序了
+自己试试看吧，你也可以
+
+因为时间原因作者（CNIHs_klxy123）就不再总结了 lol
+
+本章结束语
+数据结构与算法是编程的内功，那些神秘的面试考官最爱考这些东西 你的修为就体现在这了. 这一章你接触了从栈到图的各种数据结构，以及递归、分治、搜索、排序等基础算法. 数学拓展部分的图论与树，为你打开了竞赛数学的新大门——你已经能理解“一笔画”背后的数学原理了
