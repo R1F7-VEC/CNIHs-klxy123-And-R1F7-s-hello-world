@@ -1,0 +1,277 @@
+第八章 - 编译器与解释器入门 & 计算理论初探
+
+本章定位：
+本章作为拓展章节，可选择
+
+恭喜你，你被我恭喜到了 现在你学会了写代码. 但是你不知道计算机怎么理解你的代码的. 我们将从0实现一个四则运算解释器，并且解析像67 + 69 * (91 - 13) 这样的表达式. 同时，我们会顺带理解“形式语言”和“自动机”的基本概念——它们是编程语言和正则表达式的数学基础
+
+学习目标：
+
+理解“编译器”和“解释器”的区别
+掌握词法分析（将源码拆成 Token）
+掌握语法分析（递归下降解析表达式）
+理解抽象语法树（AST）的概念
+实现一个完整的四则运算解释器
+了解形式语言与自动机的基本概念
+
+8.1 编译器与解释器：它们在做啥？
+
+你写一行代码，计算机根本不知道你叽里咕噜说的啥：它只认0和1. 编译器和解释器的作用就是把你的代码转化成0和1（0和1的代码可以通过cpu指令集直接跑起来）
+
+类型	工作方式						示例
+编译器	一次性把整个源代码翻译成机器码，生成可执行文件		C、C++、Go（编译后运行）
+解释器	逐行读取、逐行翻译、逐行执行，不生成独立的可执行文件	Python、Lua、JavaScript（传统上）
+混合型	编译成字节码，再在虚拟机上解释执行			Java、Python（.pyc）、C#
+
+无论是编译器还是解释器，它们的工作流程本质上是一样的：
+
+源代码 → 词法分析 → 语法分析 → 语义分析 → 生成中间代码 → 执行/生成机器码
+
+本章我们只关注前两个环节：词法分析和语法分析，并实现一个简单的解释器
+
+对于初学者来说，理解这个流程最重要的价值在于：当你写代码时，你的思路会更清晰，因为你知道编译器是如何一步步处理你写的每一行文本的
+
+8.2 词法分析（Lexical Analysis）
+
+词法分析是第一步，它的任务是：把源代码字符串拆成一个个有意义的“单词”，即 Token（记号）
+
+输入: "12 + 3 * (4 - 2)"
+输出: [12, +, 3, *, (, 4, -, 2, )]
+
+每个 Token 通常包含：
+
+type：类型（数字、运算符、左括号、右括号等）
+value：实际的值
+
+import re
+
+拿python举个例子：
+def tokenize(expr):
+    # 按空格和符号拆分，保留括号和运算符
+    tokens = re.findall(r'\d+|[+\-*/()]', expr)
+    return tokens
+
+print(tokenize("12 + 3 * (4 - 2)"))
+# 输出: ['12', '+', '3', '*', '(', '4', '-', '2', ')']
+
+8.3 语法分析（Parsing）
+
+语法分析的任务是：根据语法规则，检查 Token 序列的结构是否正确，并构建解析树（或抽象语法树 AST）
+
+我们使用递归下降解析（Recursive Descent Parsing）方法，它是最直观的解析方式——每个语法规则对应一个函数，函数之间可以相互调用
+
+8.3.1 语法规则
+
+我们定义的语法规则如下：
+
+表达式 → 项 ( '+' | '-' 项 )*
+项 → 因子 ( '*' | '/' 因子 )*
+因子 → 数字 | '(' 表达式 ')'
+
+这段规则表示：
+
+表达式由项组成，项之间用 + 或 - 连接
+项由因子组成，因子之间用 * 或 / 连接
+因子可以是数字，也可以是括号括起来的表达式
+
+8.3.2 抽象语法树（AST）
+
+解析完成后，我们构建的是一棵树（AST），而不是直接计算结果. 树的好处是可以后续进行优化、生成代码或再次执行
+
+示例：表达式 114 + 514 * (69 - 67) 的 AST：
+
+        +
+       / \
+     114  *
+         / \
+       514  -
+           / \
+         69   67
+
+8.4 实现：一个完整的四则运算解释器
+
+class Parser:
+    def __init__(self, tokens):
+        self.tokens = tokens
+        self.pos = 0
+
+    def peek(self):
+        """查看当前 Token"""
+        if self.pos < len(self.tokens):
+            return self.tokens[self.pos]
+        return None
+
+    def next_token(self):
+        """消耗并返回当前 Token"""
+        token = self.peek()
+        self.pos += 1
+        return token
+
+    def parse_expression(self):
+        """
+        表达式 → 项 ( '+' | '-' 项 )*
+        """
+        node = self.parse_term()
+        while self.peek() and self.peek()[1] in ('+', '-'):
+            op = self.next_token()[1]
+            right = self.parse_term()
+            node = (op, node, right)
+        return node
+
+    def parse_term(self):
+        """
+        项 → 因子 ( '*' | '/' 因子 )*
+        """
+        node = self.parse_factor()
+        while self.peek() and self.peek()[1] in ('*', '/'):
+            op = self.next_token()[1]
+            right = self.parse_factor()
+            node = (op, node, right)
+        return node
+
+    def parse_factor(self):
+        """
+        因子 → 数字 | '(' 表达式 ')'
+        """
+        token = self.peek()
+        if token is None:
+            raise SyntaxError("意外的输入结束")
+
+        if token[0] == 'NUMBER':
+            self.next_token()
+            return ('NUM', token[1])
+
+        elif token[1] == '(':
+            self.next_token()
+            node = self.parse_expression()
+            if self.peek() is None or self.peek()[1] != ')':
+                raise SyntaxError("缺少右括号")
+            self.next_token()
+            return node
+
+        else:
+            raise SyntaxError(f"意外的 Token: {token}")
+
+def evaluate(node):
+    """
+    计算 AST 的值
+    """
+    if node[0] == 'NUM':
+        return node[1]
+    op, left, right = node
+    if op == '+':
+        return evaluate(left) + evaluate(right)
+    if op == '-':
+        return evaluate(left) - evaluate(right)
+    if op == '*':
+        return evaluate(left) * evaluate(right)
+    if op == '/':
+        return evaluate(left) / evaluate(right)
+    raise ValueError(f"未知操作符: {op}")
+
+def parse_and_eval(expr):
+    tokens = tokenize_with_types(expr)
+    parser = Parser(tokens)
+    ast = parser.parse_expression()
+    return evaluate(ast)
+
+# 测试
+print(parse_and_eval("12 + 3 * (4 - 2)"))   # 输出 18.0
+print(parse_and_eval("3 + 4 * 2 - 6 / 3"))  # 输出 9.0
+print(parse_and_eval("(1 + 2) * (3 + 4)"))  # 输出 21.0
+
+8.5 数学拓展 · 形式语言与自动机
+
+你刚才实现的解析器，实际上是在“识别”一种形式语言——即算术表达式的语法规则. 而实现解析器的方式（递归下降），本质上是手工实现了一个下推自动机
+
+8.5.1 什么是形式语言？
+
+形式语言是一组字符串的集合，这些字符串由有限的符号组成，并遵循特定的规则. 我们平时写的代码，就是一门形式语言的实例
+
+正则语言：由正则表达式描述的语言
+上下文无关语言：由上下文无关文法描述的语言
+你写的四则运算表达式，就是一个上下文无关语言的例子
+
+8.5.2 什么是自动机？
+
+自动机是计算模型，用于识别和处理字符串
+
+类型			能力				对应语言
+有限自动机 (FA)		只能匹配简单的模式，如 ab+	正则语言
+下推自动机 (PDA)	能用栈记住嵌套结构，如括号匹配	上下文无关语言
+图灵机 (TM)		能模拟任何计算过程		所有可计算语言
+
+你写的解析器利用栈结构（递归调用）匹配括号嵌套，等价于一个下推自动机
+
+8.5.3 为什么理解这些有用？
+
+理解正则表达式：它们就是有限自动机的直接体现
+理解编译原理：编程语言的解析器本质上就是下推自动机的实现
+理解 AI 语言模型：大语言模型本质上是在学习“语言的结构”
+8.6 综合实战：扩展你的解释器
+
+任务 1：支持负数
+修改 parse_factor，使其能识别以 - 开头的数字，如 -3
+
+任务 2：支持变量
+增加变量存储功能，使解释器能解析 x = 3; x + 2 这样的表达式（需扩展文法）
+
+任务 3：支持比较运算
+增加 <、>、==、!= 运算符，返回布尔值（如 3 + 4 > 2 * 5）
+
+任务 4：支持函数调用
+增加 max(3, 5) 这样的函数调用语法，支持 max、min 等内置函数
+
+完整版代码示例（含变量支持）：
+
+python
+class Parser:
+    def __init__(self, tokens):
+        self.tokens = tokens
+        self.pos = 0
+        self.variables = {}
+
+    # ... 省略之前的解析方法 ...
+
+    def parse_assignment(self):
+        """
+        赋值语句 → 标识符 '=' 表达式
+        """
+        token = self.peek()
+        if token and token[0] == 'IDENTIFIER':
+            var_name = token[1]
+            self.next_token()
+            if self.peek() and self.peek()[1] == '=':
+                self.next_token()
+                value = self.parse_expression()
+                self.variables[var_name] = value
+                return ('ASSIGN', var_name, value)
+        return self.parse_expression()
+
+    def evaluate(self, node):
+        if node[0] == 'NUM':
+            return node[1]
+        if node[0] == 'VAR':
+            return self.variables.get(node[1], 0)
+        if node[0] == 'ASSIGN':
+            return node[2]  # 返回值
+        # ... 原有的运算逻辑 ...
+本章小结
+
+概念		说明
+词法分析	把代码拆成 Token
+语法分析	检查 Token 结构，构建 AST
+递归下降解析	最直观的手写解析方式
+AST		抽象语法树
+形式语言	用规则定义的字符串集合
+自动机		识别和处理语言的数学模型
+正则语言	正则表达式能描述的语言
+上下文无关语言	递归下降解析器能处理的语言
+
+本章结束语
+通过实现一个四则运算解释器，你亲身体验了“代码是如何被计算机理解的”. 你不仅学会了编译原理的入门知识，还理解了正则表达式、编程语言解析器背后的数学原理. 如果你完成了扩展任务，你的解释器就已经具备了简单的编程语言内核
+
+接下来将进入拓展篇最后一章：机器学习
+
+学完那一章后，大部分新手的编程学习就到此结束
+
